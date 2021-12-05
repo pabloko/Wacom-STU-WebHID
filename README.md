@@ -9,23 +9,31 @@ As WebHID relies on promises all the methods return as such. Use await or set th
 
 ### Demo app
 This library only offer a way to communicate with the tablet and does not provide image rendering / ink to graphics, however, a PoC-grade demo app is provided using the library. It supports image manipulation via canvas for the preview and upload of images to the tablet, and SVG polyline based renderer that somewhat supports pressure levels. The demo app has controls to test all the features implemented.
-##### [View online demo](https://amsspecialist.com/wacomstu/demo.html)  (Must have a wacom stu-540 connected by usb)
-##### [View video demo on youtube](https://youtu.be/Nkc5DdnVf1A)
+#### [View online demo](https://amsspecialist.com/wacomstu/demo.html)  (Must have a wacom stu-540 connected by usb)
+#### [View video demo on youtube](https://youtu.be/Nkc5DdnVf1A)
 
 ### Supported API
 `checkAvailable()` Check is a usb hid from wacom vid+pid is present
+
 `bool connect()` Connect to the device
+
 `setPenColorAndWidth(color,width)` Set pen color in "#RRGGBB" format. Width can be 0-5
+
 `setBacklight(intensity)` Set backlight intensity, can be 0-3.
+
 `setBackgroundColor(color)` Set background color in '#RRGGBB' format, must clear screen to take effect
+
 `setWritingArea(obj)` Set writing area of the tablet. x1,y1=left top | x2,y2=right bottom
 `setWritingMode(mode)` Set writing mode (0: basic pen, 1: smooth pen with extra timing data)
+
 `setInking(enabled)` Enable or disable inking the screen. This does not stop events.
 `clearScreen()` Clear screen to background color
+
 `setImage(imageData)` Send a raw image to the pad. Image must be BGR 24bpp 800x480.
+
 `bool checkConnected()` Check if theres a device connected
 `onPenData(function)` Set the data callback for pen events. Callback recives an object:
-```
+```json
 {
         rdy: 	Returns TRUE if the pen is in proximity with the tablet
         sw:  	Returns TRUE if the pen is in contact with the surface
@@ -34,7 +42,7 @@ This library only offer a way to communicate with the tablet and does not provid
         cy: 	Point in Y in tablet scale (13.5)
         time: 	(Only for writingMode=1) timestamp
         seq:  	(Only for writingMode=1) incremental number
-    }
+}
 ```
 `onHidChange(function)` Set the callback for HID connect and disconnect events from devices matching wacom stu. Callback function recives ("connect/disconnect", deviceObject)
 ### Usage:
