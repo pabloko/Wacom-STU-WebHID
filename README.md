@@ -24,27 +24,29 @@ This library only offer a way to communicate with the tablet and does not provid
 `setBackgroundColor(color)` Set background color in '#RRGGBB' format, must clear screen to take effect
 
 `setWritingArea(obj)` Set writing area of the tablet. x1,y1=left top | x2,y2=right bottom
+
 `setWritingMode(mode)` Set writing mode (0: basic pen, 1: smooth pen with extra timing data)
 
 `setInking(enabled)` Enable or disable inking the screen. This does not stop events.
+
 `clearScreen()` Clear screen to background color
 
 `setImage(imageData)` Send a raw image to the pad. Image must be BGR 24bpp 800x480.
 
 `bool checkConnected()` Check if theres a device connected
 `onPenData(function)` Set the data callback for pen events. Callback recives an object:
-```json
+```js
 {
-        rdy: 	Returns TRUE if the pen is in proximity with the tablet
-        sw:  	Returns TRUE if the pen is in contact with the surface
-        press: 	Returns pen pressure in tablet units (0-1024)
-        cx: 	Point in X in tablet scale (13.5)
-        cy: 	Point in Y in tablet scale (13.5)
-        time: 	(Only for writingMode=1) timestamp
-        seq:  	(Only for writingMode=1) incremental number
+        rdy: 	, // Returns TRUE if the pen is in proximity with the tablet
+        sw:  	, // Returns TRUE if the pen is in contact with the surface
+        press: 	, // Returns pen pressure in tablet units (0-1024)
+        cx: 	, // Point in X in tablet scale (13.5)
+        cy: 	, // Point in Y in tablet scale (13.5)
+        time: 	, // (Only for writingMode=1) timestamp
+        seq:  	, // (Only for writingMode=1) incremental number
 }
 ```
-`onHidChange(function)` Set the callback for HID connect and disconnect events from devices matching wacom stu. Callback function recives ("connect/disconnect", deviceObject)
+`onHidChange(function)` Set the callback for HID connect and disconnect events from devices matching wacom stu. Callback function recives `("connect/disconnect", deviceObject)`
 ### Usage:
 ```js		
 const wacom = new wacomstu540()
