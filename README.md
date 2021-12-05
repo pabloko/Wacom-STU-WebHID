@@ -13,7 +13,7 @@ This library only offer a way to communicate with the tablet and does not provid
 #### [View video demo on youtube](https://youtu.be/Nkc5DdnVf1A)
 
 ### Supported API
-`checkAvailable()` Check is a usb hid from wacom vid+pid is present
+`checkAvailable()` Check if a usb hid from wacom vid+pid is present
 
 `bool connect()` Connect to the device
 
@@ -34,6 +34,7 @@ This library only offer a way to communicate with the tablet and does not provid
 `setImage(imageData)` Send a raw image to the pad. Image must be BGR 24bpp 800x480.
 
 `bool checkConnected()` Check if theres a device connected
+
 `onPenData(function)` Set the data callback for pen events. Callback recives an object:
 ```js
 {
