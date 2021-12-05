@@ -1,0 +1,230 @@
+<style>
+*{font-family:sans-serif;} 
+body {background: linear-gradient(312deg, #364960, #81848c);} 
+button {background: linear-gradient(45deg, #1e1e1e, transparent);border: 1px solid #4c4c4c;filter: drop-shadow(0px 2px 2px #2e2e2e);padding: 5px 10px;color: #d9d9d9;border-radius: 8px;cursor: pointer;margin: 3px;}
+td,tr,table {border:0} table {width: 70%;margin: 0 auto;margin-top:6px;}
+.r {text-align:right; color:#e0e0e0;font-size:12px;font-family:monospace;}
+</style>
+<div id="app" style="max-width:630px;background: #fff;padding: 30px;margin: 50px auto;border-radius: 15px;filter: drop-shadow(0px 4px 6px #00000077);text-align: center;color: #fff;background: linear-gradient(45deg, #111111, #3d3d3d);color:#848484;font-size: 12px;">
+<div style="position:absolute;top: 65px;left: 34px;background: linear-gradient(180deg, #1c1c1c, #1e1e1e);right: 27px;bottom: 190px;border-radius: 12px;opacity: .5;mix-blend-mode: luminosity;border: 1px solid #505050;"></div>
+<button onclick="connect()" style="width:100%;">CONNECT</button><br><input type="radio" id="radd" style="margin:8px;" /><br>
+<div style="position:relative;zoom:.6;width:800px;height:480px;margin:0 auto;">
+<canvas id="myCanvas" width=800 height=480 style="border:1px solid #3b3b3b;"></canvas>
+<svg width=800 height=480 id="ssvvgg" style="position:absolute; top:0; left:0;"></svg></div>
+<h1 style="filter: drop-shadow(0px 2px 2px #111);">Wacom STU-540</h1>
+<input type="file" id="ab" /> <button onclick="saveSvg(ssvvgg,'signature.svg')">SAVE SIGNATURE</button><br>
+<button onclick="clearscreen()">CLEAR SCREEN</button>
+<button onclick="sendimage()">SEND IMAGE</button>
+<button onclick="img.src='wacom.png'; sendimage()">DEFAULT IMAGE</button><br>
+<table style="border-collapse: collapse;" border="1"><tbody><tr>
+<td style="width: 16.6667%;" class="r">BACKGROUND</td>
+<td style="width: 16.6667%;"><input id="colo" value="#000000" type="color" onchange="changebackground()" /></td>
+<td style="width: 16.6667%;" class="r">BRIGHTNESS</td>
+<td style="width: 16.6667%;"><input id="brig" value=3 min=0 max=3 step=1 type="range" onchange="adjustbrigtness()" /></td>
+<td style="width: 16.6667%;" class="r">INKING</td>
+<td style="width: 16.6667%;"><input type="checkbox" id="imod" onchange="inkmode()" checked /></td>
+</tr><tr>
+<td style="width: 16.6667%;" class="r">PEN</td>
+<td style="width: 16.6667%;"><input id="cola" value="#1566d1" type="color" onchange="changepen()" /></td>
+<td style="width: 16.6667%;" class="r">THICKNESS</td>
+<td style="width: 16.6667%;"><input id="pens" value=1 min=0 max=5 step=1 type="range" onchange="changepen()" /></td>
+<td style="width: 16.6667%;" class="r">WRITEMODE</td>
+<td style="width: 16.6667%;"><input type="checkbox" id="wmod" onchange="writingmode()" checked /></td>
+</tr></tbody></table><br><br></div>
+
+<script src="wacomstu540.js"></script>
+<script>
+// DEMO APP
+
+//Wacom tablet object
+var wacom = new wacomstu540()
+
+//Defs
+var image
+var poly
+var pen_state = false
+var imgreq = false
+var lastPressure = 0.0
+
+//Add hid listeners
+wacom.onHidChange(function(e) {
+	if (e == 'connect')
+		app.style.opacity = 1
+	else {
+		wacom.device = null
+		app.style.opacity = 0.3
+		radd.checked = false
+	}
+})
+
+//Connect and setup initial state and events
+async function connect() {
+	if (await wacom.connect()) {
+		await wacom.clearScreen()
+		await wacom.setBackgroundColor(colo.value)
+		await wacom.setPenColorAndWidth(cola.value, pens.value)
+		await wacom.setWritingMode(1)
+		await wacom.setWritingArea({x1:0,y1:0,x2:800,y2:480})
+		await wacom.setInking(true)
+		wacom.onPenData(function(pen) {
+			pointevent(pen.press > 0 && imod.checked, pen.cx, pen.cy, pen.press)
+		})
+		addpoly()
+		radd.checked = true
+		app.style.opacity=1
+		setTimeout(function() { 
+			img.src = "wacom.png"
+		},150)
+	}
+}
+
+//Control actions
+async function inkmode() {
+	await wacom.setInking(imod.checked == 1)
+}
+async function writingmode() {
+	await wacom.setWritingMode(wmod.checked == 1 ? 1 : 0)
+}
+async function clearscreen() {
+	await wacom.clearScreen()
+	context.fillStyle = colo.value;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+	ssvvgg.innerHTML=''
+}
+async function changebackground() {
+	await wacom.setBackgroundColor(colo.value)
+	await clearscreen()
+}
+async function adjustbrigtness() {
+	console.log('do not call this often')
+	await wacom.setBacklight(brig.value)
+}
+async function changepen() {
+	await wacom.setPenColorAndWidth(cola.value, pens.value)
+}
+async function sendimage() {
+	await wacom.setImage(image)
+	imgreq = false
+	ssvvgg.innerHTML=''
+	await inkmode()
+}
+
+//Pressure ink rendering helpers
+function pressdiff(a,b) {
+  if (a > b) {
+    return a - b
+  } else {
+    return b - a
+  }
+}
+function makeStroke(v) {
+	let pf = lastPressure + 0.5  //Shift scale
+	return Math.max(v * pf, 0.5) //Ensure some width
+}
+function addpoly() {
+	poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+	poly.setAttributeNS(null, "style", "fill:none;stroke:"+cola.value+";stroke-width:"+makeStroke(parseInt(pens.value)+1)+";")
+	ssvvgg.append(poly)
+}
+
+//Pen event handler
+async function pointevent(z,x,y,p) {
+
+	//Is touching screen?
+	if (z != pen_state) {
+		if (z) {
+			addpoly()
+			//Handle repeat button
+			if (x > 580 && y < 50 && !imgreq) {
+				await wacom.setInking(false)
+				setTimeout(sendimage, 10)
+				imgreq = true
+			}
+		}
+		pen_state = z
+	}
+	if (z) {
+		//check if need to create new polyline with better fit width
+		if (pressdiff(p,lastPressure) > 0.02) {
+			//Add a connection point to the last polyline
+			var point = ssvvgg.createSVGPoint()
+			point.x = x
+			point.y = y
+			poly.points.appendItem(point)
+			lastPressure = p
+			addpoly()
+		}
+		//Add the point to the polyline
+		var point = ssvvgg.createSVGPoint()
+		point.x = x
+		point.y = y
+		poly.points.appendItem(point)
+	}
+}
+
+//Callback for image loading. Manipulates the image and converts to 24.BGR from stretched canvas
+async function loadImg() {
+	context.drawImage(img, 0, 0, 800, 480);
+	if (!img.src.includes("wacom.png")) {
+		await wacom.setWritingArea({x1:0,y1:0,x2:800,y2:480})
+	} else {
+		await wacom.setWritingArea({x1:16,y1:50,x2:800-16,y2:480-16})
+		context.font = "22px Arial";
+		var date = new Date().toLocaleString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})
+		context.fillText("Signed in XXXXXXXX at " + date, 130, 450);
+	}
+	var imageData = context.getImageData(0,0,800,480)
+	const rgb24 = new Uint8Array((imageData.data.length / 4) * 3);
+	var i = 0, j = 0;
+	while (i < imageData.data.length) {
+		//Remap argb32 to bgr24
+	    rgb24[j++] = imageData.data[i+2]
+	    rgb24[j++] = imageData.data[i+1]
+	    rgb24[j++] = imageData.data[i+0]
+	    i+=4
+	}
+	image = rgb24
+	await sendimage() //Send the image to the tablet
+}
+
+//Canvas stuff, used to create images and get its pixels
+var canvas = document.getElementById('myCanvas')
+var context = myCanvas.getContext("2d");
+var img = new Image()
+
+//Image file loading with control
+function getFile(evt) {
+    var files = evt.target.files
+    var file = files[0]
+	if (file==null) return
+    if(file.type.match('image.*')) {
+        var reader = new FileReader()
+        reader.readAsDataURL(file)
+    	reader.onload = function(evt) {
+    		if(evt.target.readyState == FileReader.DONE) {
+    			img.src = evt.target.result
+				img.onload = loadImg
+			}
+    	}
+    } else alert("not an image")
+}
+
+//Helper to download the signature SVG
+function saveSvg(svgEl, name) {
+    svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg")
+    var svgData = svgEl.outerHTML
+    var preface = '<?xml version="1.0" standalone="no"?>\r\n'
+    var svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"})
+    var svgUrl = URL.createObjectURL(svgBlob)
+    var downloadLink = document.createElement("a")
+    downloadLink.href = svgUrl
+    downloadLink.download = name
+    document.body.appendChild(downloadLink)
+    downloadLink.click()
+    document.body.removeChild(downloadLink)
+}
+
+img.onload = loadImg
+ab.onchange = getFile
+
+</script>
