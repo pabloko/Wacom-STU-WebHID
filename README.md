@@ -17,13 +17,15 @@ This library only offer a way to communicate with the tablet and does not provid
 
 `bool connect()` Connect to the device
 
+`object getTabletInfo()` Get an object containing info, capabilities and other data about the device
+
 `setPenColorAndWidth(color,width)` Set pen color in "#RRGGBB" format. Width can be 0-5
 
 `setBacklight(intensity)` Set backlight intensity, can be 0-3.
 
 `setBackgroundColor(color)` Set background color in '#RRGGBB' format, must clear screen to take effect
 
-`setWritingArea(obj)` Set writing area of the tablet. x1,y1=left top | x2,y2=right bottom
+`setWritingArea(object)` Set writing area of the tablet. x1,y1=left top | x2,y2=right bottom
 
 `setWritingMode(mode)` Set writing mode (0: basic pen, 1: smooth pen with extra timing data)
 
@@ -41,8 +43,10 @@ This library only offer a way to communicate with the tablet and does not provid
         rdy: 	, // Returns TRUE if the pen is in proximity with the tablet
         sw:  	, // Returns TRUE if the pen is in contact with the surface
         press: 	, // Returns pen pressure in tablet units (0-1024)
-        cx: 	, // Point in X in tablet scale (13.5)
-        cy: 	, // Point in Y in tablet scale (13.5)
+        cx: 	, // Point in X in tablet scale (/13.5)
+        cy: 	, // Point in Y in tablet scale (/13.5)
+		x:		, // Untransformed X
+		y:		, // Untransformed Y
         time: 	, // (Only for writingMode=1) timestamp
         seq:  	, // (Only for writingMode=1) incremental number
 }
@@ -51,19 +55,15 @@ This library only offer a way to communicate with the tablet and does not provid
 ### Usage:
 ```js		
 const wacom = new wacomstu540()
-if (await wacom.checkAvailable()) {
-	if (await wacom.connect()) {
-		//You are connected now to the tablet
-		wacom.onPenData(function(pen){
-		    // do something with pen.cx, pen.cy, pen.press, pen.sw...
-		})
-		await wacom.setWritingMode(1)
-		//...
-	} else {
-		//Cannot connect, maybe device is already in use, or cancelled
-	}
+if (await wacom.connect()) {
+	//You are connected now to the tablet
+	wacom.onPenData(function(pen){
+	    // do something with pen.cx, pen.cy, pen.press, pen.sw...
+	})
+	await wacom.setWritingMode(1)
+	//...
 } else {
-	//Wacom STU-540 not found
+	//Cannot connect, maybe device is already in use, or cancelled, or no device at all
 }
 ```
 Note: Image updating on area and image on ROM are unimplemented yet, also special 540 features, like premade menus are also unimplemented. 
